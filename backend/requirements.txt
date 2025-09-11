@@ -1,6 +1,11 @@
 fastapi
-uvicorn
-sqlmodel
+uvicorn[standard]
+sqlalchemy
 pydantic
 python-dotenv
 psycopg2-binary
+# # 추천과 임베딩 확장 하고 싶을 경우 주석 풀기
+# pgvector
+# openai
+# numpy
+# pillow
