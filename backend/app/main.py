@@ -2,18 +2,23 @@ import os
 import requests
 import google.generativeai as genai
 from dotenv import load_dotenv
+from fastapi import FastAPI
 
 # .env 파일에서 환경변수 로드
 
 # API Key 및 모델 설정
 # Gemini API 설정
 genai.configure(api_key=os.getenv("GENAI_API_KEY"))
+
+app = FastAPI()
 # Naver API 설정
 NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID")
 NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
 
 # 사용할 Gemini 모델 객체 생성
-gemini_model = genai.Model.get("gemini-1.5-flash")
+# gemini_model = genai.Model.get("gemini-1.5-flash")
+# 수정된 코드
+gemini_model = genai.GenerativeModel("gemini-1.5-flash")
 
 # 외부 API 호출 함수
 

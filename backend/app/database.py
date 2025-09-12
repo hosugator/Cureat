@@ -6,7 +6,7 @@ import os
 # PostgreSQL 연결 URL (환경 변수에서 불러옴)
 SQLALCHEMY_DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+psycopg2://postgres:password@localhost:5432/fastapi_db"
+    "postgresql+psycopg2://postgres:12345678@localhost:5432/fastapi_db"
 )
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
