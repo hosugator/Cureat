@@ -61,10 +61,15 @@ const HomeUI = ({ handleLogout, handleSearch }) => {
       <ScrollView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.logo}>Cureat</Text>
-          <TouchableOpacity onPress={() => console.log('Menu')}>
-            <Text style={styles.menuIcon}>☰</Text>
-          </TouchableOpacity>
+          <Text style={styles.logo}>
+            <Text>Cur</Text>
+            <Text style={{ color: '#FFC04C' }}>e</Text>
+            <Text>at</Text>
+          </Text>
+
+          {/* <TouchableOpacity onPress={() => console.log('Menu')}>
+            <Text style={styles.menuIcon}></Text>
+          </TouchableOpacity> */}
         </View>
 
         {/* Search Bar & Categories */}
@@ -171,8 +176,8 @@ const HomeUI = ({ handleLogout, handleSearch }) => {
       </ScrollView>
 
       {/* Footer / Tab Bar */}
-      <Footer />    
-      </SafeAreaView>
+      <Footer />
+    </SafeAreaView>
   );
 };
 
@@ -187,13 +192,13 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingTop: 50,
     paddingBottom: 20,
   },
   logo: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#DE5897', // 로고 색상 변경
   },
