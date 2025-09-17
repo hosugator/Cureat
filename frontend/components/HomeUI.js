@@ -2,19 +2,19 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TextInput, TouchableOpacity, FlatList, Image, Alert } from 'react-native';
 import Footer from './Footer';
 
-// 더미 데이터
+// 더 안정적인 이미지 URL로 교체된 데이터
 const popularRestaurants = [
-  { id: '1', name: 'The Cozy Corner', rating: 4.5, reviews: '1200+', image: 'https://placehold.co/150x150/EAEAEA/888888?text=Restaurant1' },
-  { id: '2', name: 'The Urban Grill', rating: 4.2, reviews: '800+', image: 'https://placehold.co/150x150/EAEAEA/888888?text=Restaurant2' },
-  { id: '3', name: 'Italian Delight', rating: 4.8, reviews: '2500+', image: 'https://placehold.co/150x150/EAEAEA/888888?text=Restaurant3' },
-  { id: '4', name: 'Seafood Heaven', rating: 4.1, reviews: '500+', image: 'https://placehold.co/150x150/EAEAEA/888888?text=Restaurant4' },
+  { id: '1', name: 'The Cozy Corner', rating: 4.5, reviews: '1200+', image: 'https://upload.wikimedia.org/wikipedia/commons/4/45/A_small_cup_of_coffee.JPG' },
+  { id: '2', name: 'The Urban Grill', rating: 4.2, reviews: '800+', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Cooking_yakitori.jpg/1024px-Cooking_yakitori.jpg' },
+  { id: '3', name: 'Italian Delight', rating: 4.8, reviews: '2500+', image: 'https://upload.wikimedia.org/wikipedia/commons/4/4d/Tagliatelle_al_rag%C3%B9_%28image_modified%29.jpg' },
+  { id: '4', name: 'Seafood Heaven', rating: 4.1, reviews: '500+', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/%E8%8C%B9%E3%81%A7%E3%82%AC%E3%83%8B.jpg/2560px-%E8%8C%B9%E3%81%A7%E3%82%AC%E3%83%8B.jpg' },
 ];
 
 const personalizedRecommendations = [
-  { id: '1', name: 'Cozy Brunch Spot', rating: 4.6, reviews: '950+', image: 'https://placehold.co/150x150/EAEAEA/888888?text=Personal1' },
-  { id: '2', name: 'Late Night Tacos', rating: 4.3, reviews: '620+', image: 'https://placehold.co/150x150/EAEAEA/888888?text=Personal2' },
-  { id: '3', name: 'Healthy Bistro', rating: 4.7, reviews: '1800+', image: 'https://placehold.co/150x150/EAEAEA/888888?text=Personal3' },
-  { id: '4', name: 'Authentic Thai', rating: 4.4, reviews: '1100+', image: 'https://placehold.co/150x150/EAEAEA/888888?text=Personal4' },
+  { id: '1', name: 'Cozy Brunch Spot', rating: 4.6, reviews: '950+', image: 'https://cdn.apartmenttherapy.info/image/upload/f_auto,q_auto:eco,c_fit,w_730,h_487/k%2FFood%20Fest%202021%2FBrunch%20Fest%2FPhoto%2F2021-03-30_ATK-47735-no-whip_no-yolk-break_3-2' },
+  { id: '2', name: 'Late Night Tacos', rating: 4.3, reviews: '620+', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/001_Tacos_de_carnitas%2C_carne_asada_y_al_pastor.jpg/500px-001_Tacos_de_carnitas%2C_carne_asada_y_al_pastor.jpg' },
+  { id: '3', name: 'Healthy Bistro', rating: 4.7, reviews: '1800+', image: 'https://healthy-bistro.com/wp-content/uploads/2025/05/HealthyChickenSandwich.jpg' },
+  { id: '4', name: 'Authentic Thai', rating: 4.4, reviews: '1100+', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTJzW0uBbXAYb4L7x0dJzwPHLdXKru76_Xi2Q&s' },
 ];
 
 const filterCategories = [
@@ -134,7 +134,7 @@ const HomeUI = ({ handleLogout, handleSearch }) => {
         {/* Popular Restaurants */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>내 주변 인기 맛집</Text>
+            <Text style={styles.sectionTitle}>Popular Now</Text>
             <View style={styles.arrows}>
               <TouchableOpacity><Text style={styles.arrow}>{'<'}</Text></TouchableOpacity>
               <TouchableOpacity><Text style={styles.arrow}>{'>'}</Text></TouchableOpacity>
@@ -153,7 +153,7 @@ const HomeUI = ({ handleLogout, handleSearch }) => {
         {/* Personalized Recommendations */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>나를 위한 맞춤 추천</Text>
+            <Text style={styles.sectionTitle}>For You</Text>
             <View style={styles.arrows}>
               <TouchableOpacity><Text style={styles.arrow}>{'<'}</Text></TouchableOpacity>
               <TouchableOpacity><Text style={styles.arrow}>{'>'}</Text></TouchableOpacity>

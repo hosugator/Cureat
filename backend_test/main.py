@@ -139,7 +139,7 @@ async def dynamic_search(search_query: SearchQuery):
 
         query_for_crawler = f"{search_location} 맛집"
         # 테스트를 위해 10개로 줄였지만, 실제로는 30개로 늘릴 수 있습니다.
-        all_analyzed_data = recommender.process_restaurants(query_for_crawler, target_count=10)
+        all_analyzed_data = recommender.process_restaurants(query_for_crawler, target_count=3)
 
         if not all_analyzed_data:
             conn.close()
