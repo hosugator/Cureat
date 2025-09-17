@@ -4,7 +4,7 @@ import sqlite3
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timedelta
 from crawling import RestaurantRecommender
 
 # 데이터베이스 파일 경로 설정
@@ -31,9 +31,11 @@ class SearchQuery(BaseModel):
 GLOBAL_USER_ID = "user_abc_123"
 
 # 데이터베이스 연결 및 테이블 생성 함수
-def create_table_if_not_exists():
+def create_tables_if_not_exists():
     """
-    search_logs.db에 users_search_logs 테이블이 없으면 생성합니다.
+    필요한 모든 데이터베이스 테이블을 생성합니다.
+    - users_search_logs: 사용자 검색어 로그
+    - search_results_cache: 검색 결과 캐시
     """
     conn = sqlite3.connect(DATABASE_FILE)
     cursor = conn.cursor()
@@ -45,13 +47,20 @@ def create_table_if_not_exists():
             timestamp TEXT NOT NULL
         )
     """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS search_results_cache (
+            query TEXT PRIMARY KEY,
+            results TEXT NOT NULL,
+            timestamp TEXT NOT NULL
+        )
+    """)
     conn.commit()
     conn.close()
 
 # 애플리케이션 시작 시 데이터베이스 테이블 생성
 @app.on_event("startup")
 def startup_event():
-    create_table_if_not_exists()
+    create_tables_if_not_exists()
     print("INFO: 데이터베이스 테이블이 준비되었습니다.")
 
 # API 엔드포인트: 검색어 저장 (POST)
@@ -94,33 +103,61 @@ def get_search_results():
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="검색 결과를 찾을 수 없습니다.")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"파일 로드 중 오류 발생: {e}")
+        raise HTTPException(status_code=500, detail=f"파일 로드 중 오류: {e}")
     
-# ⚡️ 새로운 API 엔드포인트: 동적 맛집 검색 및 추천
+# ⚡️ 새로운 API 엔드포인트: 동적 맛집 검색 및 추천 (캐싱 기능 추가)
 @app.post("/search")
 async def dynamic_search(search_query: SearchQuery):
     try:
-        # 1. crawling.py의 클래스 인스턴스 생성
+        query_text = search_query.query
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+
+        # 1. DB에서 캐시된 결과 확인
+        cursor.execute("SELECT results, timestamp FROM search_results_cache WHERE query=?", (query_text,))
+        row = cursor.fetchone()
+
+        # ⚡️ 캐시가 존재하고 24시간 이내의 데이터인지 확인
+        if row:
+            cached_results_str, timestamp_str = row
+            cached_timestamp = datetime.fromisoformat(timestamp_str)
+            if datetime.now() - cached_timestamp < timedelta(hours=24):
+                print(f"INFO: '{query_text}'에 대한 캐시된 결과를 반환합니다.")
+                conn.close()
+                return {"message": "캐시된 검색 및 추천 완료", "results": json.loads(cached_results_str)}
+
+        print(f"INFO: '{query_text}'에 대한 새로운 검색을 시작합니다.")
+        
+        # 2. 캐시가 없거나 만료되었으므로, 기존의 동적 검색 프로세스 실행
         recommender = RestaurantRecommender()
 
-        # 2. Gemini AI를 사용해 사용자 쿼리 분석
-        user_profile = recommender.parse_user_query_with_gemini(search_query.query)
+        user_profile = recommender.parse_user_query_with_gemini(query_text)
         search_location = user_profile.get('location', '정보 없음')
 
         if search_location == "정보 없음":
             raise HTTPException(status_code=400, detail="쿼리에서 지역 정보를 찾을 수 없습니다.")
 
-        # 3. 분석된 지역 정보를 바탕으로 맛집 후보 탐색
         query_for_crawler = f"{search_location} 맛집"
-        all_analyzed_data = recommender.process_restaurants(query_for_crawler, target_count=3) # 테스트를 위해 10개로 줄였습니다.
+        # 테스트를 위해 10개로 줄였지만, 실제로는 30개로 늘릴 수 있습니다.
+        all_analyzed_data = recommender.process_restaurants(query_for_crawler, target_count=10)
 
         if not all_analyzed_data:
+            conn.close()
             return {"message": "분석할 맛집 정보가 없습니다.", "results": []}
 
-        # 4. 사용자 프로필에 가장 근접한 상위 3곳 추천
         top_3_recommendations = recommender.get_top_recommendations(user_profile, all_analyzed_data)
         
-        # 5. 최종 결과를 반환
+        # 3. 새로운 결과를 DB에 저장 (캐싱)
+        results_to_cache = json.dumps(top_3_recommendations, ensure_ascii=False)
+        timestamp_now = datetime.now().isoformat()
+        cursor.execute("""
+            INSERT OR REPLACE INTO search_results_cache (query, results, timestamp)
+            VALUES (?, ?, ?)
+        """, (query_text, results_to_cache, timestamp_now))
+        
+        conn.commit()
+        conn.close()
+        
         return {"message": "검색 및 추천 완료", "results": top_3_recommendations}
 
     except Exception as e:

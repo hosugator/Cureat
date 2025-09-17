@@ -62,22 +62,22 @@ const HomeUI = ({ handleLogout, handleSearch }) => {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.logo}>Cureat</Text>
-          <TouchableOpacity onPress={() => console.log('Menu')}>
+          {/* <TouchableOpacity onPress={() => console.log('Menu')}>
             <Text style={styles.menuIcon}>☰</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         {/* Search Bar & Categories */}
         <View style={styles.searchContainer}>
           <View style={styles.searchBarWrapper}>
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={isCourseActive ? styles.searchButtonActive : styles.searchButtonInactive}
               onPress={() => setIsCourseActive(!isCourseActive)}
             >
               <Text style={isCourseActive ? styles.searchButtonTextActive : styles.searchButtonTextInactive}>
                 코스
               </Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <TextInput
               style={styles.searchInput}
               placeholder="음식점, 요리 또는 지역을 검색하세요"
