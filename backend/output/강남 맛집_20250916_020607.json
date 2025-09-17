@@ -1,0 +1,57 @@
+{
+  "query": "강남 맛집",
+  "timestamp": "20250916_020607",
+  "total_processed": 1,
+  "top_results": [
+    {
+      "name": "강남 맛집 베스트 10",
+      "address": "",
+      "image_url": null,
+      "mapx": "",
+      "mapy": "",
+      "summary_pros": [
+        "분위기 좋은 레스토랑 다수",
+        "가격 대비 만족도 높은 곳 존재",
+        "신선한 재료 사용",
+        "다양한 메뉴 선택지",
+        "세심한 접객"
+      ],
+      "summary_cons": [],
+      "keywords": [
+        "레스토랑",
+        "맛집",
+        "파스타",
+        "가로수길",
+        "강남",
+        "태안",
+        "생선구이",
+        "조개구이",
+        "만두전골",
+        "치킨",
+        "데이트",
+        "가성비",
+        "합리적인 가격"
+      ],
+      "nearby_attractions": [
+        "가로수길",
+        "청담동"
+      ],
+      "signature_menu": "다양한 파스타(리모네, 타야린, 비지파스타 등), 모듬 생선구이, 자연산 대하 튀김, 게국지, 페투치네 생면 파스타",
+      "summary_phone": "정보 없음",
+      "summary_parking": "정보 없음",
+      "summary_price": "다양함 (합리적인 가격부터 고가까지)",
+      "summary_opening_hours": "정보 없음",
+      "review_trust_score": 0,
+      "summary_text": "레스토랑 맛집 파스타 가로수길 강남 태안 생선구이 조개구이 만두전골 치킨 데이트 가성비 합리적인 가격 분위기 좋은 레스토랑 다수 가격 대비 만족도 높은 곳 존재 신선한 재료 사용 다양한 메뉴 선택지 세심한 접객",
+      "view_count": 0,
+      "like_count": 0,
+      "dislike_count": 0,
+      "comment_count": 0,
+      "share_count": 0,
+      "is_favorite_count": 0,
+      "similarity_score": 0.4853849655274227,
+      "final_score": 0.33976947586919587,
+      "rank": 1
+    }
+  ]
+}

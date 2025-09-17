@@ -1,0 +1,91 @@
+[
+  {
+    "name": "강남역 맛집",
+    "search_query": "강남 강남역 맛집",
+    "crawled_at": "2025-09-16T20:33:03.228346",
+    "kakao_basic_info": {},
+    "reviews": [],
+    "analysis": {}
+  },
+  {
+    "name": "사당역 맛집",
+    "search_query": "강남 사당역 맛집",
+    "crawled_at": "2025-09-16T20:33:03.926994",
+    "kakao_basic_info": {},
+    "reviews": [
+      {
+        "text": "​​​​​​​도톰하고 고소한 서울 대방어 맛집 찾아보자!",
+        "source_url": "https://v.daum.net/v/19lYsbEuxj",
+        "source_title": "서울 대방어 <b>맛집</b> 추천 BEST 9 (+2023 대방어 시세) - 콘텐츠뷰"
+      },
+      {
+        "text": "서울 대방어 맛집 추천 BEST 9 - 목차 -  0. 2023-2024 대방어 시세 1. 노량진 청양수산 2. 논현 보물섬 3. 사당 우리회포차 4. 성신여대 광명수산 5. 잠실 완도산회포장마차 송파직영점 6. 망원 우리바다수산 7. 합정 알배기 8. 노원 상계 우리수산 9. 가락시장역 선우회센터",
+        "source_url": "https://v.daum.net/v/19lYsbEuxj",
+        "source_title": "서울 대방어 <b>맛집</b> 추천 BEST 9 (+2023 대방어 시세) - 콘텐츠뷰"
+      }
+    ],
+    "analysis": {
+      "restaurant_summary": {
+        "name": "사당역 맛집 (우리회포차 추정)",
+        "category": "일식",
+        "overall_rating": null,
+        "price_range": null,
+        "recommended_for": [
+          "데이트",
+          "친구모임"
+        ]
+      },
+      "menu_info": {
+        "signature_dishes": [
+          "대방어"
+        ],
+        "popular_items": [],
+        "menu_variety": "제공된 정보만으로는 판단 불가",
+        "taste_rating": null
+      },
+      "ambiance_service": {
+        "atmosphere": "제공된 정보만으로는 판단 불가",
+        "interior": "제공된 정보만으로는 판단 불가",
+        "service_quality": "제공된 정보만으로는 판단 불가",
+        "staff_friendliness": null,
+        "cleanliness": "제공된 정보만으로는 판단 불가"
+      },
+      "practical_info": {
+        "parking": "제공된 정보만으로는 판단 불가",
+        "waiting_time": "제공된 정보만으로는 판단 불가",
+        "reservation": "제공된 정보만으로는 판단 불가",
+        "opening_hours": "제공된 정보만으로는 판단 불가",
+        "best_time_to_visit": "제공된 정보만으로는 판단 불가"
+      },
+      "detailed_analysis": {
+        "pros": [
+          "도톰하고 고소한 대방어 제공 (추정)"
+        ],
+        "cons": [],
+        "keywords": [
+          "대방어",
+          "회",
+          "사당역",
+          "맛집",
+          "서울"
+        ],
+        "customer_types": "대방어를 선호하는 사람들",
+        "revisit_intention": "제공된 정보만으로는 판단 불가"
+      },
+      "recommendation": {
+        "overall_recommendation": null,
+        "target_audience": "대방어를 좋아하는 사람, 사당역 근처에서 회를 먹고 싶은 사람",
+        "best_menu_combo": "제공된 정보만으로는 판단 불가",
+        "visit_tips": "제공된 정보가 부족하여 방문 팁을 제공할 수 없습니다."
+      }
+    }
+  },
+  {
+    "name": "홍대 파스타",
+    "search_query": "강남 홍대 파스타",
+    "crawled_at": "2025-09-16T20:33:09.080075",
+    "kakao_basic_info": {},
+    "reviews": [],
+    "analysis": {}
+  }
+]
