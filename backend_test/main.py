@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime
+from crawling import RestaurantRecommender
 
 # 데이터베이스 파일 경로 설정
 DATABASE_FILE = "search_logs.db"
@@ -94,3 +95,34 @@ def get_search_results():
         raise HTTPException(status_code=404, detail="검색 결과를 찾을 수 없습니다.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"파일 로드 중 오류 발생: {e}")
+    
+# ⚡️ 새로운 API 엔드포인트: 동적 맛집 검색 및 추천
+@app.post("/search")
+async def dynamic_search(search_query: SearchQuery):
+    try:
+        # 1. crawling.py의 클래스 인스턴스 생성
+        recommender = RestaurantRecommender()
+
+        # 2. Gemini AI를 사용해 사용자 쿼리 분석
+        user_profile = recommender.parse_user_query_with_gemini(search_query.query)
+        search_location = user_profile.get('location', '정보 없음')
+
+        if search_location == "정보 없음":
+            raise HTTPException(status_code=400, detail="쿼리에서 지역 정보를 찾을 수 없습니다.")
+
+        # 3. 분석된 지역 정보를 바탕으로 맛집 후보 탐색
+        query_for_crawler = f"{search_location} 맛집"
+        all_analyzed_data = recommender.process_restaurants(query_for_crawler, target_count=3) # 테스트를 위해 10개로 줄였습니다.
+
+        if not all_analyzed_data:
+            return {"message": "분석할 맛집 정보가 없습니다.", "results": []}
+
+        # 4. 사용자 프로필에 가장 근접한 상위 3곳 추천
+        top_3_recommendations = recommender.get_top_recommendations(user_profile, all_analyzed_data)
+        
+        # 5. 최종 결과를 반환
+        return {"message": "검색 및 추천 완료", "results": top_3_recommendations}
+
+    except Exception as e:
+        print(f"동적 검색 중 오류 발생: {e}")
+        raise HTTPException(status_code=500, detail="서버에서 검색을 처리하는 중 오류가 발생했습니다.")
