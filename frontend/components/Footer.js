@@ -23,10 +23,10 @@ const Footer = () => {
                 <Text style={styles.tabIconActive}></Text>
                 <Text style={styles.tabTextActive}>검색</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.tabItemActive} onPress={() => handlePress('/list')}>
+            {/* <TouchableOpacity style={styles.tabItemActive} onPress={() => handlePress('/list')}>
                 <Text style={styles.tabIconActive}></Text>
                 <Text style={styles.tabTextActive}>목록</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <TouchableOpacity style={styles.tabItemActive} onPress={() => handlePress('/home')}>
                 <Text style={styles.tabIconActive}></Text>
                 <Text style={styles.tabTextActive}>홈</Text>
