@@ -16,7 +16,9 @@ from bs4 import BeautifulSoup
 from readability import Document
 
 # --- 프로젝트 내부 모듈 Import ---
-from . import models, schemas, crud, nlpService, vector_db_service
+from . import models, schemas, crud, nlpService
+from . import vectorDBService as vector_db_service
+from .service.gemini_service import gemini_service # Gemini 서비스 임포트
 
 # ------------------------------
 # 초기 설정
@@ -29,25 +31,7 @@ NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID")
 NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
 KAKAO_REST_KEY = os.getenv("KAKAO_REST_KEY")
 SCRAPINGBEE_KEY = os.getenv("SCRAPINGBEE_KEY")
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-
-# Gemini API 클라이언트를 설정합니다.
-if GOOGLE_API_KEY:
-    genai.configure(api_key=GOOGLE_API_KEY)
-    llm = genai.GenerativeModel('gemini-1.5-flash')
-else:
-    llm = None # API 키가 없을 경우를 대비
-
-# 상수 정의
-NAVER_LOCAL_URL = "https://openapi.naver.com/v1/search/local.json"
-NAVER_IMAGE_URL = "https://openapi.naver.com/v1/search/image"
-NAVER_BLOG_SEARCH_URL = "https://openapi.naver.com/v1/search/blog.json"
-KAKAO_WEB_SEARCH_URL = "https://dapi.kakao.com/v2/search/web"
-KAKAO_LOCAL_KEYWORD_URL = "https://dapi.kakao.com/v2/local/search/keyword.json"
-KAKAO_MOBILITY_DIRECTIONS_URL = "https://apis-navi.kakaomobility.com/v1/directions"
-REQUEST_TIMEOUT = 5.0
-MAX_RETRY = 2
-AD_REVIEW_PATTERNS = [r"소정의\s*원고료", r"체험단", r"업체로부터\s*제공", r"광고\s*참고", r"협찬"]
+# GOOGLE_API_KEY 변수는 gemini_service에서 사용하므로 여기서는 제거합니다.
 
 # ------------------------------
 # 외부 API 및 크롤링 헬퍼
@@ -155,7 +139,10 @@ def advanced_crawl_restaurant_details(name: str) -> Dict[str, Any]:
 # LLM 요약 로직
 # ------------------------------
 def llm_summarize_details(name: str, crawled_info: Dict[str, Any]) -> Dict[str, Any]:
-    if not llm: return {}
+    if not gemini_service: 
+        logging.warning("Gemini 서비스가 초기화되지 않았습니다.")
+        return {}
+        
     prompt = f"""
     너는 맛집 요약 전문가야. 아래 "크롤링 정보"를 읽고 반드시 아래 JSON 형식으로만 응답해줘.
     [크롤링 정보]
@@ -169,12 +156,8 @@ def llm_summarize_details(name: str, crawled_info: Dict[str, Any]) -> Dict[str, 
       "parking": "주차 정보", "phone": "전화번호",
       "nearby_attractions": ["주변 놀거리1","주변 놀거리2","주변 놀거리3"]
     }}"""
-    try:
-        resp = llm.generate_content(prompt)
-        return _safe_json_loads(getattr(resp, "text", "") or "{}")
-    except Exception as e:
-        logging.warning(f"LLM summarize error: {e}")
-        return {}
+    
+    return gemini_service.generate_json_content(prompt)
 
 # ------------------------------
 # 핵심 비즈니스 로직 (맛집 추천)
@@ -249,7 +232,10 @@ def create_date_course(db: Session, request: schemas.CourseRequest, user: models
     # 각 장소를 get_restaurant_details로 처리하여 상세 정보를 채워넣습니다.)
     logging.info(f"'{request.theme}' 테마의 코스 생성 요청")
     
-    # 예시: LLM을 이용한 간단한 코스 생성
+    if not gemini_service:
+        logging.warning("Gemini 서비스가 초기화되지 않았습니다.")
+        return {"courses": []}
+
     prompt = f"""
     너는 최고의 데이트 코스 플래너야. 아래 제약 조건에 맞춰 최적의 데이트 코스 3가지를 제안해줘.
     [제약 조건]
@@ -259,36 +245,69 @@ def create_date_course(db: Session, request: schemas.CourseRequest, user: models
     [답변 형식]
     각 코스를 "코스 1: [코스 제목] | [장소1] -> [장소2]..." 형식으로 추천해줘.
     """
-    try:
-        response = llm.generate_content(prompt)
-        course_lines = [line.strip() for line in response.text.split('\n') if line.strip().startswith("코스")]
-        
-        final_courses = []
-        for line in course_lines:
-            try:
-                title_part, steps_part = line.split("|", 1)
-                course_title = title_part.split(":", 1)[1].strip().strip('[]')
-                place_names = [name.strip() for name in steps_part.split("->")]
-                
-                course_steps_details = []
-                for name in place_names:
-                    # 각 장소의 상세 정보를 가져옵니다.
-                    naver_search_result = search_naver_local(name, display=1)
-                    if naver_search_result:
-                        item = naver_search_result[0]
-                        place_name = _clean_html(item.get("title",""))
-                        place_address = item.get("roadAddress") or item.get("address", "")
-                        details = get_restaurant_details(db, place_name, place_address)
-                        if details:
-                            course_steps_details.append(schemas.RestaurantDetail(**details))
-                
-                if course_steps_details:
-                    final_courses.append(schemas.CourseDetail(title=course_title, steps=course_steps_details))
-            except Exception:
-                continue # 파싱 실패 시 해당 코스는 건너뜀
-
-        return {"courses": final_courses}
-    except Exception as e:
-        logging.warning(f"Course generation error: {e}")
+    
+    raw_response = gemini_service.generate_content(prompt)
+    
+    if not raw_response:
         return {"courses": []}
+
+    course_lines = [line.strip() for line in raw_response.split('\n') if line.strip().startswith("코스")]
+    
+    final_courses = []
+    for line in course_lines:
+        try:
+            title_part, steps_part = line.split("|", 1)
+            course_title = title_part.split(":", 1)[1].strip().strip('[]')
+            place_names = [name.strip() for name in steps_part.split("->")]
+            
+            course_steps_details = []
+            for name in place_names:
+                # 각 장소의 상세 정보를 가져옵니다.
+                naver_search_result = search_naver_local(name, display=1)
+                if naver_search_result:
+                    item = naver_search_result[0]
+                    place_name = _clean_html(item.get("title",""))
+                    place_address = item.get("roadAddress") or item.get("address", "")
+                    details = get_restaurant_details(db, place_name, place_address)
+                    if details:
+                        course_steps_details.append(schemas.RestaurantDetail(**details))
+            
+            if course_steps_details:
+                final_courses.append(schemas.CourseDetail(title=course_title, steps=course_steps_details))
+        except Exception as e:
+            logging.warning(f"코스 파싱 중 오류 발생: {e} (line: {line})")
+            continue # 파싱 실패 시 해당 코스는 건너뜀
+
+    return {"courses": final_courses}
+
+# ------------------------------
+# 누락된 헬퍼 함수들
+# ------------------------------
+def search_naver_local(query: str, display: int = 5) -> List[Dict[str, Any]]:
+    """네이버 지역 검색 API를 사용하여 맛집 정보를 검색합니다."""
+    if not NAVER_CLIENT_ID or not NAVER_CLIENT_SECRET:
+        return []
+    
+    params = {"query": query, "display": display}
+    result = _naver_get(NAVER_LOCAL_URL, params)
+    return result.get("items", [])
+
+def fetch_image_url(restaurant_name: str) -> str:
+    """네이버 이미지 검색 API를 사용하여 맛집 이미지 URL을 가져옵니다."""
+    if not NAVER_CLIENT_ID or not NAVER_CLIENT_SECRET:
+        return ""
+    
+    params = {"query": f"{restaurant_name} 음식", "display": 1}
+    result = _naver_get(NAVER_IMAGE_URL, params)
+    items = result.get("items", [])
+    return items[0].get("link", "") if items else ""
+
+def kakao_search_web(query: str, size: int = 5) -> List[Dict[str, Any]]:
+    """카카오 웹 검색 API를 사용하여 웹 문서를 검색합니다."""
+    if not KAKAO_REST_KEY:
+        return []
+    
+    params = {"query": query, "size": size}
+    result = _kakao_get(KAKAO_WEB_SEARCH_URL, params)
+    return result.get("documents", [])
 

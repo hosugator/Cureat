@@ -7,7 +7,7 @@ import chromadb
 # PostgreSQL 연결 URL (환경 변수에서 불러옴)
 SQLALCHEMY_DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+psycopg2://postgres:password@localhost:5432/fastapi_db"
+    "postgresql+pg8000://postgres:password@localhost:5432/fastapi_db"
 )
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
