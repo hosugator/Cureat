@@ -89,7 +89,7 @@ const HomeUI = ({ handleLogout, handleSearch }) => {
           </View>
           <View style={styles.tagContainer}>
             <TouchableOpacity onPress={handleResetFilters} style={styles.resetButton}>
-              <Text style={styles.resetButtonText}>초기화</Text>
+              <Text style={styles.resetButtonText}>↻</Text>
             </TouchableOpacity>
             {filterCategories.map(filter => (
               <View key={filter.id} style={styles.filterTagWrapper}>
@@ -250,12 +250,12 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   resetButton: {
-    backgroundColor: '#E0E0E0',
+    // backgroundColor: '#E0E0E0',
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 15,
-    marginRight: 10,
-    marginBottom: 10,
+    marginRight: 0,
+    marginBottom: 0,
   },
   resetButtonText: {
     color: '#666',
