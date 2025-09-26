@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, FlatList, Image, TextInput, Keyboard, PanResponder } from 'react-native';
 import { useNavigation, useRouter } from 'expo-router';
 import Footer from './Footer';
+import UserProfileModal from './UserProfileModal';
 
 const ResultCard = ({ item, onPress }) => (
     <TouchableOpacity onPress={() => onPress(item)} style={styles.card}>
@@ -26,11 +27,14 @@ const ResultScreen = ({
     isLoading,
     activeFilters,
     toggleFilter,
-    textInputRef
+    textInputRef,
+    userProfile,
+    updateUserProfile
 }) => {
     const navigation = useNavigation();
     const router = useRouter();
     const [keyboardHeight, setKeyboardHeight] = useState(0);
+    const [showProfileModal, setShowProfileModal] = useState(false);
     const footerHeight = 100; // Footer 컴포넌트의 높이 (스타일시트에서 설정된 값)
 
     useEffect(() => {
@@ -57,6 +61,12 @@ const ResultScreen = ({
         router.push({ pathname: 'detail', params: item });
     };
 
+    const handleProfileSave = (newProfile) => {
+        if (updateUserProfile) {
+            updateUserProfile(newProfile);
+        }
+    };
+
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.header}>
@@ -64,11 +74,17 @@ const ResultScreen = ({
                     <Text style={styles.backIcon}>←</Text>
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Cureat</Text>
+                <TouchableOpacity 
+                    onPress={() => setShowProfileModal(true)} 
+                    style={styles.settingsButton}
+                >
+                    <Text style={styles.settingsIcon}>⚙️</Text>
+                </TouchableOpacity>
             </View>
             <View style={styles.filterTagContainer}>
-                {activeFilters.map(filter => (
+                {activeFilters.map((filter, index) => (
                     <TouchableOpacity
-                        key={filter.id}
+                        key={filter.id || `filter-${index}`}
                         onPress={() => toggleFilter(filter.id)}
                         style={[
                             styles.filterTag,
@@ -87,7 +103,7 @@ const ResultScreen = ({
             <FlatList
                 data={searchResults}
                 renderItem={({ item }) => <ResultCard item={item} onPress={navigateToDetail} />}
-                keyExtractor={item => item.id}
+                keyExtractor={(item, index) => item.id?.toString() || `item-${index}`}
                 ListEmptyComponent={
                     isLoading ? (
                         <Text style={styles.loadingText}>검색 중...</Text>
@@ -122,6 +138,13 @@ const ResultScreen = ({
                 </View>
             </View>
             <Footer />
+            
+            <UserProfileModal
+                visible={showProfileModal}
+                onClose={() => setShowProfileModal(false)}
+                onSave={handleProfileSave}
+                initialProfile={userProfile}
+            />
         </SafeAreaView>
     );
 };
@@ -143,6 +166,14 @@ const styles = StyleSheet.create({
         position: 'absolute',
         left: 15,
         padding: 5,
+    },
+    settingsButton: {
+        position: 'absolute',
+        right: 15,
+        padding: 5,
+    },
+    settingsIcon: {
+        fontSize: 20,
     },
     backIcon: {
         fontSize: 24,

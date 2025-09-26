@@ -20,7 +20,7 @@ class ApiConfig {
 
     // 3. 개발 중일 때는 일반적인 로컬 네트워크 IP 시도
     const commonIPs = [
-      'http://192.168.45.20:8000',
+      'http://192.168.45.180:8000',
       'http://192.168.1.20:8000',
       'http://192.168.0.20:8000',
       'http://10.0.0.20:8000',
@@ -46,7 +46,7 @@ class ApiConfig {
   // 사용 가능한 백엔드 URL 찾기
   async findWorkingBackendURL() {
     const candidateURLs = [
-      'http://192.168.45.20:8000',
+      'http://192.168.45.180:8000',
       'http://127.0.0.1:8000',
       'http://localhost:8000',
       'http://192.168.1.20:8000',

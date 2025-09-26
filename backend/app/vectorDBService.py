@@ -1,61 +1,87 @@
 from typing import List, Dict, Any
-from .database import get_vector_db_collection
-
-# database.py에서 설정한 벡터 DB 컬렉션 가져오기
-collection = get_vector_db_collection()
+from sqlalchemy.orm import Session
+from . import models
+from .database import SessionLocal
+import json
 
 def upsert_restaurant(restaurant_id: str, vector: List[float], metadata: Dict[str, Any]):
-    """맛집의 벡터와 메타데이터(요약 정보 등)를 ChromaDB에 저장하거나 업데이트"""
-    # ChromaDB는 리스트 형태 메타데이터 지원하지 않음, 문자열로 변환 필요
-    senitized_metadata = {}
-    for key, value in metadata.items():
-        if isinstance(value, list):
-            senitized_metadata[key] = '|'.join(value)
-        else:
-            senitized_metadata[key] = value
+    """맛집의 메타데이터를 SQLite에 저장하거나 업데이트 (벡터는 무시)"""
+    db = SessionLocal()
+    try:
+        restaurant = db.query(models.Restaurant).filter(models.Restaurant.id == int(restaurant_id)).first()
+        if restaurant:
+            # 메타데이터를 restaurant 테이블의 기존 필드에 업데이트
+            if 'category' in metadata:
+                restaurant.category = metadata['category']
+            if 'keywords' in metadata:
+                if isinstance(metadata['keywords'], list):
+                    restaurant.keywords = json.dumps(metadata['keywords'])
+                else:
+                    restaurant.keywords = str(metadata['keywords'])
+            if 'atmosphere' in metadata:
+                restaurant.atmosphere = metadata['atmosphere']
             
-    collection.upsert(
-        ids=[restaurant_id],
-        embeddings=[vector],
-        metadatas=[senitized_metadata]
-    )
-    print(f"Restaurant ID {restaurant_id} 벡터 정보가 ChromaDB에 업데이트 되었습니다.")
+            db.commit()
+            print(f"Restaurant ID {restaurant_id} 메타데이터가 SQLite에 업데이트 되었습니다.")
+    finally:
+        db.close()
     
-def query_similar_restaurants(vector: List[float], n_results: int = 3) -> List[Dict[str, Any]]:
-    results = collection.query(
-        query_embeddings=[vector],
-        n_results=n_results
-    )
-    
-    # DB에서 |로 구분된 문자열을 다시 리스트로 변환하여 반환합니다.
-    final_results = []
-    if results and results.get('metadatas'):
-        for metadata in results['metadatas'][0]:
-            if metadata.get('summary_pros'):
-                metadata['summary_pros'] = metadata['summary_pros'].split('|')
-            if metadata.get('summary_cons'):
-                metadata['summary_cons'] = metadata['summary_cons'].split('|')
-            if metadata.get('keywords'):
-                metadata['keywords'] = metadata['keywords'].split('|')
-            if metadata.get('nearby_attractions'):
-                metadata['nearby_attractions'] = metadata['nearby_attractions'].split('|')
-            if metadata.get('signature_menu'):
-                metadata['signature_menu'] = metadata['signature_menu'].split('|')
-            if metadata.get('categories'):
-                metadata['categories'] = metadata['categories'].split('|')
-            if metadata.get('summary_paring'):
-                metadata['summary_parking'] = metadata['summary_parking'].split('|')
-            if metadata.get('summary_price'):
-                metadata['summary_price'] = metadata['summary_price'].split('|')
-            if metadata.get('summary_opening_hours'):
-                metadata['summary_opening_hours'] = metadata['summary_opening_hours'].split('|')
-            if metadata.get('summary_phone'):
-                metadata['summary_phone'] = metadata['summary_phone'].split('|')
-            final_results.append(metadata)
-                        
-    return final_results
+def query_similar_restaurants(keywords: List[str], n_results: int = 3) -> List[Dict[str, Any]]:
+    """키워드를 기반으로 SQLite에서 유사한 맛집을 검색합니다."""
+    db = SessionLocal()
+    try:
+        restaurants = db.query(models.Restaurant).all()
+        
+        matched_restaurants = []
+        for restaurant in restaurants:
+            score = 0
+            for keyword in keywords:
+                if keyword.lower() in (restaurant.name or '').lower():
+                    score += 3
+                if keyword.lower() in (restaurant.category or '').lower():
+                    score += 2
+                if keyword.lower() in (restaurant.keywords or '').lower():
+                    score += 1
+            
+            if score > 0:
+                matched_restaurants.append({
+                    'id': restaurant.id,
+                    'name': restaurant.name,
+                    'category': restaurant.category,
+                    'address': restaurant.address,
+                    'keywords': restaurant.keywords,
+                    'score': score
+                })
+        
+        # 점수 순으로 정렬
+        matched_restaurants.sort(key=lambda x: x['score'], reverse=True)
+        return matched_restaurants[:n_results]
+        
+    finally:
+        db.close()
+
+def get_restaurant_by_id(restaurant_id: str) -> Dict[str, Any]:
+    """SQLite에서 맛집 정보를 ID로 조회합니다."""
+    db = SessionLocal()
+    try:
+        restaurant = db.query(models.Restaurant).filter(models.Restaurant.id == int(restaurant_id)).first()
+        if restaurant:
+            return {
+                'id': restaurant.id,
+                'name': restaurant.name,
+                'category': restaurant.category,
+                'address': restaurant.address,
+                'keywords': restaurant.keywords
+            }
+        return {}
+    finally:
+        db.close()
 
 def check_restaurant_exists(restaurant_id: str) -> bool:
-    """벡터 DB에 해당 맛집 정보가 이미 있는지 확인합니다."""
-    result = collection.get(ids=[restaurant_id])
-    return bool(result['ids'])
+    """SQLite에 해당 맛집 정보가 이미 있는지 확인합니다."""
+    db = SessionLocal()
+    try:
+        restaurant = db.query(models.Restaurant).filter(models.Restaurant.id == int(restaurant_id)).first()
+        return restaurant is not None
+    finally:
+        db.close()

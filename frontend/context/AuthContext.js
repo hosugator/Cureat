@@ -31,6 +31,19 @@ export const AuthProvider = ({ children }) => {
     loadToken();
   }, []);
 
+  const setToken = async (token) => {
+    try {
+      if (token) {
+        await AsyncStorage.setItem('userToken', token);
+        setIsLoggedIn(true);
+        setUser({ username: '사용자' }); // 기본 사용자 정보 설정
+      }
+    } catch (e) {
+      console.error('Failed to save token', e);
+      throw e;
+    }
+  };
+
   const login = async (userData) => {
     try {
       // 백엔드에서 반환하는 access_token을 사용
@@ -61,7 +74,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, user, login, logout }}>
+    <AuthContext.Provider value={{ isLoggedIn, user, login, logout, setToken }}>
       {children}
     </AuthContext.Provider>
   );

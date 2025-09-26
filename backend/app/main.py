@@ -5,9 +5,10 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 import logging
@@ -15,8 +16,15 @@ import traceback
 from datetime import timedelta
 
 # 프로젝트 내부 모듈
-from . import models, schemas, crud, auth, recommendation_service
-from .database import get_db, engine
+try:
+    from . import models, schemas, crud, auth, recommendation_service
+    from .database import get_db, engine
+    from .service.restaurant_search_service import restaurant_search_service
+except ImportError:
+    # 직접 실행 시 절대 경로 import
+    import models, schemas, crud, auth, recommendation_service
+    from database import get_db, engine
+    from service.restaurant_search_service import restaurant_search_service
 
 # 환경 변수 로드는 config.py에서 처리하므로 main.py에서는 제거합니다.
 # load_dotenv()
@@ -39,6 +47,10 @@ tags_metadata = [
         "description": "AI 기반 맛집 및 데이트 코스 추천 API",
     },
     {
+        "name": "검색",
+        "description": "프롬프트 기반 맛집 검색 API",
+    },
+    {
         "name": "리뷰",
         "description": "맛집 리뷰 생성 및 관리를 위한 API",
     },
@@ -52,10 +64,13 @@ app = FastAPI(
     openapi_tags=tags_metadata
 )
 
-# CORS 설정
+# CORS 설정 - React Native 앱에서 다양한 IP로 접근 가능하도록 설정
+# 경고: 현재 모든 출처('*')를 허용하고 있습니다. 프로덕션 배포 전에는 반드시
+# 실제 프론트엔드 애플리케이션의 도메인으로 이 목록을 제한해야 합니다.
+# 예: allow_origins=["http://localhost:8081", "https://your-app-domain.com"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=["*"],  # React Native 앱에서 접근 허용
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -101,14 +116,32 @@ async def root():
     status_code=status.HTTP_201_CREATED,
     summary="신규 사용자 회원가입",
     responses={
-        400: {"description": "이미 등록된 이메일일 경우 발생합니다."}
+        400: {"description": "이미 등록된 이메일 또는 전화번호일 경우 발생합니다."}
     }
 )
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    db_user = crud.get_user_by_email(db, email=user.email)
-    if db_user:
-        raise HTTPException(status_code=400, detail="이미 등록된 이메일입니다.")
-    return crud.create_user(db=db, user=user)
+    try:
+        # 이메일 중복 검사
+        db_user = crud.get_user_by_email(db, email=user.email)
+        if db_user:
+            raise HTTPException(status_code=400, detail="이미 등록된 이메일입니다.")
+        
+        # 전화번호 중복 검사
+        db_phone = crud.get_user_by_phone(db, phone=user.phone)
+        if db_phone:
+            raise HTTPException(status_code=400, detail="이미 등록된 전화번호입니다.")
+            
+        return crud.create_user(db=db, user=user)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception("회원가입 중 예상치 못한 오류 발생")
+        if "UNIQUE constraint failed: users.phone" in str(e):
+            raise HTTPException(status_code=400, detail="이미 등록된 전화번호입니다.")
+        elif "UNIQUE constraint failed: users.email" in str(e):
+            raise HTTPException(status_code=400, detail="이미 등록된 이메일입니다.")
+        else:
+            raise HTTPException(status_code=500, detail=f"회원가입 중 오류가 발생했습니다: {str(e)}")
 
 @app.get("/users/{user_id}", response_model=schemas.User, tags=["사용자"])
 def get_user(user_id: int, db: Session = Depends(get_db)):
@@ -130,6 +163,31 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
 def read_users_me(current_user: models.User = Depends(auth.get_current_active_user)):
     return current_user
 
+@app.get(
+    "/search/prompt",
+    tags=["검색"], 
+    summary="프롬프트 기반 맛집 검색"
+)
+def search_by_prompt(prompt: str, user_id: int = None, db: Session = Depends(get_db)):
+    """프론트엔드의 검색 요청을 처리합니다."""
+    try:
+        user_profile = {}
+        if user_id:
+            user_profile = crud.get_user_personalization_profile(db, user_id)
+            if not user_profile:
+                logging.warning(f"사용자 {user_id}의 개인화 데이터를 찾을 수 없어 기본 검색을 수행합니다.")
+            else:
+                logging.info(f"사용자 {user_id}의 프로필을 사용하여 검색합니다.")
+        
+        results = restaurant_search_service.search_restaurants_by_prompt(
+            prompt=prompt,
+            user_profile=user_profile
+        )
+        return results
+    except Exception as e:
+        logging.exception("Error in /search/prompt endpoint")
+        raise HTTPException(status_code=500, detail=f"검색 중 오류: {str(e)}")
+
 @app.post(
     "/recommendations", 
     response_model=schemas.RecommendationResponse, 
@@ -146,7 +204,7 @@ def get_recommendation(request: schemas.ChatRequest, db: Session = Depends(get_d
                 raise HTTPException(status_code=404, detail="요청한 사용자를 찾을 수 없습니다.")
 
         recommendation_data = recommendation_service.get_personalized_recommendation(db, request, user)
-        
+    
         if user:
             crud.create_search_log(db, user_id=user.id, query=request.prompt)
             
@@ -174,6 +232,57 @@ def create_course(request: schemas.CourseRequest, db: Session = Depends(get_db))
     return course_data
 
 @app.post(
+    "/search/prompt", 
+    tags=["검색"],
+    summary="자연어 프롬프트 기반 맛집 검색",
+    description="사용자가 검색창에 입력한 자연어를 기반으로 개인화된 맛집을 추천합니다. 로그인한 사용자의 DB 개인화 데이터를 자동으로 활용합니다."
+)
+def search_restaurants_by_prompt(
+    prompt: str,
+    user_id: int = None,
+    db: Session = Depends(get_db)
+):
+    """
+    자연어 프롬프트 기반 맛집 검색
+    
+    - **prompt**: 사용자가 검색창에 입력한 자연어 (예: "강남역 근처 데이트하기 좋은 이탈리안 레스토랑")
+    - **user_id**: 로그인한 사용자 ID (개인화 데이터 조회용, 선택적)
+    
+    **작동 방식:**
+    1. user_id가 제공되면 DB에서 사용자 개인화 데이터 조회 (나이, 성별, 관심사, 알레르기, 최근 검색 기록 등)
+    2. 자연어 프롬프트와 개인화 데이터를 결합하여 AI가 맞춤 검색 수행
+    3. 카카오/네이버 API로 맛집 후보 발견 → 웹 크롤링으로 리뷰 수집 → Gemini AI로 분석 → 개인화 추천
+    """
+    try:
+        user_profile = {}
+        
+        # 사용자 ID가 제공된 경우 DB에서 개인화 데이터 조회
+        if user_id:
+            user_profile = crud.get_user_personalization_profile(db, user_id)
+            if user_profile:
+                logging.info(f"사용자 {user_id}의 개인화 프로필 로드 완료: {user_profile['age_group']}, {user_profile['gender']}")
+                
+                # 검색 로그 저장
+                crud.create_search_log(db, user_id, prompt)
+            else:
+                logging.warning(f"사용자 {user_id}의 개인화 데이터를 찾을 수 없습니다.")
+        else:
+            logging.info("비로그인 사용자 검색 (개인화 데이터 없음)")
+        
+        # 자연어 프롬프트와 개인화 데이터로 검색 수행
+        result = restaurant_search_service.search_restaurants_by_prompt(prompt, user_profile)
+        
+        return {
+            "status": "success",
+            "data": result,
+            "user_profile_used": bool(user_profile)  # 개인화 데이터 사용 여부
+        }
+        
+    except Exception as e:
+        logging.exception("Error in /search/prompt endpoint")
+        raise HTTPException(status_code=500, detail=f"검색 중 오류가 발생했습니다: {str(e)}")
+
+@app.post(
     "/reviews/", 
     response_model=schemas.Review, 
     tags=["리뷰"],
@@ -184,8 +293,8 @@ def create_course(request: schemas.CourseRequest, db: Session = Depends(get_db))
         404: {"description": "리뷰를 작성하려는 음식점이 DB에 존재하지 않을 경우 발생합니다."}
     }
 )
-def create_review(review: schemas.ReviewCreate, db: Session = Depends(get_db)):
-    return crud.create_review(db=db, review=review, user_id=1)  # 임시로 user_id=1 사용
+def create_review(review: schemas.ReviewCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    return crud.create_review(db=db, review=review, user_id=current_user.id)
 
 # --- 개발용 테스트 엔드포인트 ---
 @app.get("/test-naver-api", tags=["테스트"])
@@ -209,4 +318,4 @@ def test_naver_api():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="192.168.45.180", port=8000)

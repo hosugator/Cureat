@@ -1,189 +1,127 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, SafeAreaView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
+import { Link, useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
-import { login } from '../../services/authService';
-
-// 커스텀 버튼 컴포넌트
-const CustomButton = ({ title, onPress, style, textStyle, disabled, loading }) => (
-    <TouchableOpacity style={[styles.button, style]} onPress={onPress} disabled={disabled}>
-        {loading ? (
-            <ActivityIndicator color="#fff" />
-        ) : (
-            <Text style={[styles.buttonText, textStyle]}>{title}</Text>
-        )}
-    </TouchableOpacity>
-);
+import { login as authLogin } from '../../services/authService';
 
 export default function LoginScreen() {
-    const router = useRouter();
-    const { login: authLogin } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const router = useRouter();
+    const { setToken } = useAuth(); // setToken 함수를 가져옵니다.
 
     const handleLogin = async () => {
         if (!email || !password) {
-            Alert.alert('오류', '이메일과 비밀번호를 모두 입력해주세요.');
+            Alert.alert('입력 오류', '이메일과 비밀번호를 모두 입력해주세요.');
             return;
         }
-
-        setLoading(true);
+        setIsLoading(true);
         try {
-            const userData = await login(email, password);
-
-            authLogin(userData);
-
-            Alert.alert('로그인 성공', '홈 화면으로 이동합니다.', [
-                { text: '확인', onPress: () => router.replace('/home') }
-            ]);
-
+            // authService.login 호출하여 토큰 받기
+            const response = await authLogin(email, password);
+            console.log("로그인 성공 응답:", response);
+            if (response && response.access_token) {
+                // AuthContext의 setToken 함수에 액세스 토큰을 전달합니다.
+                setToken(response.access_token);
+                // 로그인 성공 후 홈 화면으로 이동
+                router.replace('/home');
+            } else {
+                 Alert.alert('로그인 실패', '서버 응답이 올바르지 않습니다.');
+            }
         } catch (error) {
-            Alert.alert('로그인 실패', error.message || '로그인에 실패했습니다.');
+            console.error("로그인 중 오류 발생:", error);
+            Alert.alert('로그인 실패', error.message || '알 수 없는 오류가 발생했습니다.');
         } finally {
-            setLoading(false);
+            setIsLoading(false);
         }
     };
 
-    return (
-        <SafeAreaView style={styles.safeArea}>
-            <View style={styles.container}>
-                {/* 뒤로가기 버튼 */}
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Text style={styles.backButtonText}>←</Text>
-                </TouchableOpacity>
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView 
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+      >
+        <Text style={styles.title}>Cureat</Text>
+        <Text style={styles.subtitle}>AI와 함께하는 미식의 순간</Text>
+        
+        <TextInput
+            style={styles.input}
+            placeholder="이메일"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+        />
+        <TextInput
+            style={styles.input}
+            placeholder="비밀번호"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+        />
 
-                {/* 제목 및 설명 */}
-                <View style={styles.header}>
-                    <Text style={styles.title}>Cureat</Text>
-                    <Text style={styles.description}>
-                        당신만의 미식 경험이 기다리고 있습니다.
-                    </Text>
-                </View>
-
-                {/* 입력 필드 */}
-                <View style={styles.inputContainer}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="이메일"
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                    />
-                    <TextInput
-                        style={styles.input}
-                        placeholder="비밀번호"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
-                    />
-                </View>
-
-                {/* 로그인 및 링크 버튼 */}
-                <View style={styles.authContainer}>
-                    <CustomButton
-                        title="로그인"
-                        onPress={handleLogin}
-                        style={styles.loginButton}
-                        textStyle={styles.loginButtonText}
-                        disabled={loading}
-                        loading={loading}
-                    />
-                    <View style={styles.linkContainer}>
-                        <TouchableOpacity onPress={() => console.log('비밀번호 찾기')}>
-                            <Text style={styles.linkText}>비밀번호 찾기</Text>
-                        </TouchableOpacity>
-                        <Text style={styles.linkText}>|</Text>
-                        <TouchableOpacity onPress={() => console.log('회원가입')}>
-                            <Text style={styles.linkText}>회원가입</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </View>
-        </SafeAreaView>
-    );
+        <TouchableOpacity 
+            style={styles.loginButton}
+            onPress={handleLogin}
+            disabled={isLoading}
+        >
+            {isLoading ? (
+                <ActivityIndicator color="#fff" />
+            ) : (
+                <Text style={styles.loginButtonText}>로그인</Text>
+            )}
+        </TouchableOpacity>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#fff',
     },
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
-        alignItems: 'center',
-        padding: 20,
         justifyContent: 'center',
-    },
-    backButton: {
-        position: 'absolute',
-        top: 60,
-        left: 20,
-        zIndex: 1,
-    },
-    backButtonText: {
-        fontSize: 24,
-        color: '#000000',
-    },
-    header: {
-        alignItems: 'center',
-        marginBottom: 40,
+        paddingHorizontal: 24,
     },
     title: {
-        fontSize: 28,
+        fontSize: 48,
         fontWeight: 'bold',
-        color: '#DE5897',
-        marginBottom: 10,
-    },
-    description: {
-        fontSize: 14,
-        color: '#888888',
+        color: '#EC4899', // text-pink-500
         textAlign: 'center',
     },
-    inputContainer: {
-        width: '100%',
-        alignItems: 'center',
-        marginBottom: 20,
+    subtitle: {
+        fontSize: 16,
+        color: '#6B7280', // text-gray-500
+        textAlign: 'center',
+        marginBottom: 48,
     },
     input: {
-        width: '85%',
         height: 50,
+        borderColor: '#E5E7EB', // border-gray-200
         borderWidth: 1,
-        borderColor: '#CCCCCC',
-        borderRadius: 8,
-        paddingHorizontal: 15,
-        marginBottom: 10,
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        marginBottom: 16,
         fontSize: 16,
-    },
-    authContainer: {
-        width: '100%',
-        alignItems: 'center',
     },
     loginButton: {
-        width: '85%',
-        backgroundColor: '#000000',
-        borderRadius: 8,
-        paddingVertical: 15,
+        backgroundColor: '#EC4899', // bg-pink-500
+        height: 50,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 8,
     },
     loginButtonText: {
-        color: '#FFFFFF',
-        fontWeight: 'bold',
+        color: '#fff',
         fontSize: 16,
+        fontWeight: 'bold',
     },
-    button: {
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    linkContainer: {
-        flexDirection: 'row',
-        marginTop: 20,
-        width: '85%',
-        justifyContent: 'space-around',
-    },
-    linkText: {
-        color: '#888888',
-        fontSize: 14,
-    },
+
 });

@@ -11,7 +11,14 @@ import requests
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 from bs4 import BeautifulSoup
-from readability import Document
+try:
+    from readability.readability import Document
+except ImportError:
+    try:
+        from readability import Document
+    except ImportError:
+        # readability 라이브러리가 없는 경우 기본 BeautifulSoup 사용
+        Document = None
 
 # --- 프로젝트 내부 모듈 Import ---
 from . import models, schemas, crud, nlpService
@@ -329,8 +336,13 @@ def fetch_html(url: str) -> str:
 
 def extract_main_text_from_html(html: str) -> str:
     try:
-        doc = Document(html)
-        return doc.summary()
+        if Document:
+            doc = Document(html)
+            return doc.summary()
+        else:
+            # Document가 없는 경우 BeautifulSoup으로 대체
+            soup = BeautifulSoup(html, 'html.parser')
+            return soup.get_text()
     except Exception:
         return ""
 
@@ -401,7 +413,7 @@ def llm_summarize_details(name: str, crawled_info: Dict[str, Any]) -> Dict[str, 
 
 def get_restaurant_details(db: Session, name: str, address: str) -> Optional[Dict[str, Any]]:
     try:
-        restaurant = crud.get_or_create_restaurant_in_postgres(db, name, address)
+        restaurant = crud.get_or_create_restaurant(db, name, address)
         logging.info(f"'{name}' 레스토랑 정보를 반환합니다 (SQLite only)")
         return restaurant_to_dict(restaurant)
     except Exception as e:

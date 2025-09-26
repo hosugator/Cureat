@@ -4,8 +4,8 @@ import { Platform } from 'react-native';
 // 개발 환경에서 로컬 서버 URL 설정
 const getLocalServerUrl = () => {
   if (__DEV__) {
-    // 현재 개발 서버 IP 주소 사용
-    return 'http://192.168.45.20:8000';
+    // 사용자가 지정한 개발 서버 IP 주소 사용
+  return 'http://192.168.45.180:8000';
   } else {
     // 프로덕션 환경에서는 실제 서버 URL
     return 'https://cureat.onrender.com';

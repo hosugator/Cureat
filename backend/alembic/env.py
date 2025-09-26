@@ -28,14 +28,15 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 # --- 데이터베이스 URL ---
-# alembic.ini 대신 여기에 직접 URL을 명시하여 인코딩 문제를 회피합니다.
-DATABASE_URL = "postgresql+pg8000://postgres:password@localhost:5432/fastapi_db"
+# SQLite 데이터베이스 URL
+DATABASE_URL = "sqlite:///./cureat.db"
 
 
 def run_migrations_offline() -> None:
     """'오프라인' 모드로 마이그레이션을 실행합니다."""
+    url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=DATABASE_URL,
+        url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -47,8 +48,11 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """'온라인' 모드로 마이그레이션을 실행합니다."""
-    # alembic.ini의 설정을 사용하는 대신, 직접 생성한 엔진을 사용합니다.
-    connectable = create_engine(DATABASE_URL)
+    connectable = engine_from_config(
+        config.get_section(config.config_ini_section),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
 
     with connectable.connect() as connection:
         context.configure(

@@ -2,12 +2,13 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router'; // useRouter를 임포트합니다.
 
-const SocialButton = ({ title, icon, backgroundColor, textColor, borderColor, onPress }) => (
+
+const SocialButton = ({ title, backgroundColor, textColor, borderColor, onPress }) => (
     <TouchableOpacity
         style={[styles.socialButton, { backgroundColor: backgroundColor, borderColor: borderColor }]}
         onPress={onPress}
     >
-        <Text style={[styles.socialButtonIcon, { color: textColor }]}>{icon}</Text>
+        <Text style={[styles.socialButtonEmoji, { color: textColor }]}>{title.split(' ')[0]}</Text>
         <Text style={[styles.socialButtonText, { color: textColor }]}>{title}</Text>
     </TouchableOpacity>
 );
@@ -38,29 +39,25 @@ export default function LoginPage() {
 
             <View style={styles.socialButtonsContainer}>
                 <SocialButton
-                    title="카카오로 시작하기"
-                    icon="💬"
+                    title="🟡 카카오로 시작하기"
                     backgroundColor="#FEE500"
                     textColor="#191919"
                     borderColor="#FEE500"
                 />
                 <SocialButton
-                    title="Apple로 시작하기"
-                    icon=""
+                    title="🍎 Apple로 시작하기"
                     backgroundColor="#000000"
                     textColor="#FFFFFF"
                     borderColor="#000000"
                 />
                 <SocialButton
-                    title="네이버로 시작하기"
-                    icon="N"
+                    title="🟢 네이버로 시작하기"
                     backgroundColor="#03C75A"
                     textColor="#FFFFFF"
                     borderColor="#03C75A"
                 />
                 <SocialButton
-                    title="Google로 시작하기"
-                    icon="G"
+                    title="🔵 Google로 시작하기"
                     backgroundColor="#FFFFFF"
                     textColor="#191919"
                     borderColor="#CCCCCC"
@@ -78,14 +75,14 @@ export default function LoginPage() {
                     backgroundColor="#FFFFFF"
                     textColor="#191919"
                     borderColor="#CCCCCC"
-                    onPress={() => router.push('login/')} // 경로를 login/login으로 변경합니다.
+                    onPress={() => router.push('/login')} // 경로를 login으로 변경합니다.
                 />
                 <LoginButton
                     title="회원가입"
                     backgroundColor="#FFFFFF"
                     textColor="#191919"
                     borderColor="#CCCCCC"
-                    onPress={() => console.log('회원가입 버튼 클릭')}
+                    onPress={() => router.push('/signup')} // 회원가입 페이지로 이동
                 />
             </View>
 
@@ -137,7 +134,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         borderWidth: 1,
     },
-    socialButtonIcon: {
+    socialButtonEmoji: {
         fontSize: 20,
         marginRight: 10,
     },

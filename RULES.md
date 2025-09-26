@@ -4,6 +4,20 @@
 
 2.  The summarized information must be stored in a JSON file format.
 
+---
+
+# Assistant Rules of Conduct
+
+1.  **Do not delete or modify file structures without explicit permission.**
+2.  **When checking code, thoroughly inspect and compare all relevant files and their contents across both backend and frontend.**
+3. **Do not create temporary/test files without permission.**
+
+
+
+
+
+
+
 
 
 

@@ -40,11 +40,10 @@ const AppContent = () => {
         <Stack>
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="login/index" options={{ headerShown: false }} />
+            <Stack.Screen name="signup/index" options={{ headerShown: false }} />
             <Stack.Screen name="home/index" options={{ headerShown: false }} />
             <Stack.Screen name="search/index" options={{ headerShown: false }} />
             <Stack.Screen name="detail/index" options={{ headerShown: false }} />
-
-
         </Stack>
     );
 };

@@ -42,16 +42,15 @@ const DetailScreen = ({ data, onBack }) => {
     return (
         <SafeAreaView style={styles.safeArea}>
             <ScrollView style={styles.container}>
-                <Image source={{ uri: data.image }} style={styles.headerImage} />
+                {/* 대표 이미지 */}
+                {data.image_url ? (
+                    <Image source={{ uri: data.image_url }} style={styles.headerImage} />
+                ) : null}
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
                     <Text style={styles.backIcon}>←</Text>
                 </TouchableOpacity>
                 <View style={styles.contentContainer}>
                     <Text style={styles.name}>{data.name}</Text>
-                    <View style={styles.ratingContainer}>
-                        <Text style={styles.rating}>★ {data.rating}</Text>
-                        <Text style={styles.reviews}>({data.reviews})</Text>
-                    </View>
                     <View style={styles.buttonContainer}>
                         <TouchableOpacity style={styles.addButton} onPress={handleAddToList}>
                             <Text style={styles.addButtonText}>담기</Text>
@@ -63,20 +62,43 @@ const DetailScreen = ({ data, onBack }) => {
                     <View style={styles.infoSection}>
                         <Text style={styles.sectionTitle}>상세 정보</Text>
                         <Text style={styles.infoText}>주소: {data.address}</Text>
-                        <Text style={styles.infoText}>운영 시간: {data.hours}</Text>
+                        <Text style={styles.infoText}>운영 시간: {data.operating_hours}</Text>
                         <Text style={styles.infoText}>전화번호: {data.phone}</Text>
                     </View>
-                    <View style={styles.descriptionSection}>
-                        <Text style={styles.sectionTitle}>설명</Text>
-                        <Text style={styles.descriptionText}>{data.description}</Text>
-                    </View>
-                    <View style={styles.tagsContainer}>
-                        {data.tags.map((tag, index) => (
-                            <View key={index} style={styles.tag}>
-                                <Text style={styles.tagText}>{tag}</Text>
-                            </View>
-                        ))}
-                    </View>
+                    {/* 설명 */}
+                    {data.description ? (
+                        <View style={styles.descriptionSection}>
+                            <Text style={styles.sectionTitle}>설명</Text>
+                            <Text style={styles.descriptionText}>{data.description}</Text>
+                        </View>
+                    ) : null}
+                    {/* 키워드 태그 */}
+                    {Array.isArray(data.keywords) && data.keywords.length > 0 && (
+                        <View style={styles.tagsContainer}>
+                            {data.keywords.map((tag, index) => (
+                                <View key={index} style={styles.tag}>
+                                    <Text style={styles.tagText}>{tag}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    )}
+                    {/* 장점/단점 */}
+                    {Array.isArray(data.pros) && data.pros.length > 0 && (
+                        <View style={{ marginBottom: 10 }}>
+                            <Text style={styles.sectionTitle}>장점</Text>
+                            {data.pros.map((item, idx) => (
+                                <Text key={idx} style={styles.infoText}>• {item}</Text>
+                            ))}
+                        </View>
+                    )}
+                    {Array.isArray(data.cons) && data.cons.length > 0 && (
+                        <View style={{ marginBottom: 10 }}>
+                            <Text style={styles.sectionTitle}>단점</Text>
+                            {data.cons.map((item, idx) => (
+                                <Text key={idx} style={styles.infoText}>• {item}</Text>
+                            ))}
+                        </View>
+                    )}
                 </View>
             </ScrollView>
 

@@ -3,4 +3,4 @@
   TIMEOUT: 10000
 };
 
-export const getCurrentIP = () => '192.168.45.20';
+export const getCurrentIP = () => '192.168.45.180';

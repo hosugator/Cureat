@@ -19,7 +19,7 @@ class Settings:
     # DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+pg8000://user:password@localhost/db")
 
     # JWT 토큰
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "default_secret_key")
+    SECRET_KEY: str = os.getenv("SECRET_KEY")
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 
@@ -35,11 +35,10 @@ class Settings:
 
     # 웹 스크래핑
     SCRAPINGBEE_KEY: str = os.getenv("SCRAPINGBEE_KEY")
-    
-    # ChromaDB 설정
-    CHROMA_HOST: str = os.getenv("CHROMA_HOST", "localhost")
-    CHROMA_PORT: int = int(os.getenv("CHROMA_PORT", "8000"))
-    CHROMA_COLLECTION_NAME: str = "restaurants"
 
 # 설정 객체 인스턴스 생성
 settings = Settings()
+
+# --- 보안 설정 검사 ---
+if not settings.SECRET_KEY:
+    raise ValueError("SECRET_KEY가 .env 파일에 설정되지 않았습니다. 애플리케이션을 시작할 수 없습니다.")

@@ -19,12 +19,11 @@ class User(Base): # User 모델 정의
     
     # 개인화 데이터
     interests = Column(String, nullable=True) # 관심사
-    allergies = Column(Boolean, default=True) # 알레르기 여부
+    allergies = Column(Boolean, default=False) # 알레르기 여부
     allergies_detail = Column(String, nullable=True) # 알레르기 상세 정보
     
     # 계정 상태
-    is_active = Column(Boolean, default=True) # 활성화 여부
-    is_verified = Column(Boolean, default=False) # 이메일 인증 여부
+    is_verified = Column(Boolean, default=True) # 이메일 인증 여부
     
     # 관계 설정
     search_logs = relationship("SearchLog", back_populates="user") # 검색 로그
@@ -33,13 +32,28 @@ class User(Base): # User 모델 정의
 
 # 음식점 모델
 class Restaurant(Base):
-    """맛집 최소 정보 (PostgreSQL에 저장) - 리뷰 연결용"""
+    """맛집 정보 (AI 분석 데이터 포함)"""
     __tablename__ = "restaurants"
     id = Column(Integer, primary_key=True, index=True) # 음식점 ID
     name = Column(String, index=True, nullable=False) # 음식점 이름
     address = Column(String, nullable=False) # 음식점 주소
+    phone = Column(String, nullable=True) # 전화번호
+    operating_hours = Column(String, nullable=True) # 운영시간
     # 이름과 주소 조합으로 고유성 유지
     image_url = Column(String, nullable=True) # 음식점 이미지 URL
+    
+    # AI 분석 데이터
+    signature_dishes = Column(Text, nullable=True) # 대표메뉴 (JSON 형태)
+    price_range = Column(String, nullable=True) # 가격대
+    pros = Column(Text, nullable=True) # 장점 (JSON 형태)
+    cons = Column(Text, nullable=True) # 단점 (JSON 형태)
+    keywords = Column(Text, nullable=True) # 키워드 (JSON 형태)
+    category = Column(String, nullable=True) # 음식 카테고리
+    atmosphere = Column(String, nullable=True) # 분위기
+    
+    # 메타데이터
+    created_at = Column(DateTime(timezone=True), server_default=func.now()) # 생성 시간
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now()) # 업데이트 시간
         
     reviews = relationship("Review", back_populates="restaurant") # 리뷰
     
